@@ -1,0 +1,99 @@
+stop_id,stop-name,stop_lat,stop_lon,pickup_type,
+1A,Autobusová stanica,49.059251,20.292955,1
+1B,Autobusová stanica,49.05925,20.29255,1
+1C,Autobusová stanica,,,0
+2A,Hviezdoslavova,49.057775,20.2961,1
+2B,Hviezdoslavova,49.05803,20.29712,1
+3A,Okresný úrad,49.057195,20.300425,1
+3B,Okresný úrad,49.05742,20.300375,1
+4A,Dom kultúry,49.05486,20.295227,1
+4B,Dom kultúry,49.054925,20.29639,1
+5A,Bajkalská,49.04948,20.294325,1
+5B,Bajkalská,49.049,20.29429838,1
+6A,Uherova,49.04429075,20.2884,1
+6B,Uherova,49.04423,20.2886,1
+7,Rastislavova,49.042665,20.281141,1
+8,Šoltésovej,49.045329,20.279625,1
+9,Zimná,49.04753,20.284577,1
+10,Cirkevná škola,49.047775,20.288575,1
+11A,Šafárikova,49.068615,20.28451,1
+11B,Šafárikova,49.068685,20.284125,1
+12A,Jahodná,49.06675,20.29079,1
+12B,Jahodná,49.065655,20.2922525,1
+13,Sokolovská,49.0631,20.29842,1
+14A,Uralská,49.06295,20.3017,1
+14B,Uralská,49.0631,20.3019,1
+15A,Mláky,49.063,20.31328,1
+15B,Mláky,49.062775,20.31314,1
+16A,Tatravagónka,49.0617652006914,20.3152120113373,1
+16B,Tatravagónka,49.06107,20.31315,1
+17,Ružový sad,49.064555,20.31955,1
+18A,"Spišská Sobota, ZŠ",49.065175,20.3094,1
+18B,"Spišská Sobota, ZŠ",49.0649,20.30918,1
+19A,Jesenského,49.066987,20.313,1
+19B,Jesenského,49.0667,20.31325,1
+20A,Sobotské námestie,49.06605055,20.315325,1
+20B,Sobotské námestie,49.06605,20.3158,1
+21A,Matejovská,49.0671605,20.32155,1
+21B,Matejovská,49.06707,20.32078,1
+22,"Spišská Sobota, čerpacia stanica",49.0677245401815,20.3234893083572,1
+23,Beko,49.074183,20.32636,1
+24,Priemyselná,49.07472,20.32,1
+25A,Tatramat,49.078142,20.32744,1
+25B,Tatramat,49.07593,20.32695,1
+26,Lidická,49.08185,20.32817,1
+27,Matejovské námestie,49.081233,20.322155,1
+28,Allendeho,49.0800,20.32414,1
+29,Zámoček,49.08025,20.32735,1
+30A,"Tesco, hypermarket",49.058369587,20.26613,1
+31A,Partizánska,49.0586,20.2768
+31B,Partizánska,49.0588,20.2739
+32A,Štúrova,49.0572649,20.28315
+32B,Štúrova,49.05725,20.28205
+33A,Podtatranská,49.0565,20.286
+33B,Podtatranská,49.0562325,20.28815
+34A,Železničná,49.062739,20.2856475
+34B,železničná
+35A,Široká,49.06302,20.27881
+35B,Široká,
+36A,Teplická,49.0638205,20.274951
+36B,široká,
+37A,Šarišská,49.06604,20.2772
+37B,Šarišská,
+38A,Velické námestie,
+38B,Velické námestie,49.0681495,20.2793355
+39,"Veľká, cintorín",49.071257,20.279033+
+40,Slobody,49.06443,20.29922+
+41,Košická,49.065021,20.302581+
+42A,"Kukučínová, gymnázium",49.04779,20.345
+42B,"Kukučínová, gymnázium",
+43A,Skladová,49.05573,20.3204
+43B,Skladová,49.05573,20.3204
+44,Strážske námestie,49.056945,20.325675
+45A,Námestie svätého Cyrila a Metóda,
+45B,Námestie svätého Cyrila a Metóda,49.045745,20.2967815
+46A,Tajovského,
+46B,Tajovského,49.044563,20.3018785
+47A,Tomášikova,
+47B,Tomášikova,49.047813,20.305501
+48A,Nemocnica,49.05175257,20.30499414
+48B,Nemocnica,
+49,SOŠ remesiel,49.0541722024865,20.3098207712173+
+50,"Okružná, podchod",49.0581797627483,20.3076776862144+
+51A,Štefánikova,49.0569,20.30375
+51B,štefánikova,49.056975,20.3029
+52,Levočská,49.054778,20.309095+
+53,Dostojevského,49.050371,20.29922+
+54,Juh-nemocnica,49.050092,20.30448+
+55,Obchodná akadémia,49.05081,20.297315+
+56A,Hraničná,49.059675,20.2804875,1
+56B,Hraničná,49.05974,20.28104,0
+57A,Kovošrot,49.05935,20.28527
+57B,Kovošrot,49.05929,20.28485
+58A,NC Forum,49.053,20.29825
+58B,NC Forum,49.05305,20.29923
+59,Tatranské námestie,49.0535,20.30405
+60A,"Moyzesova, OC",49.0438335,20.292006
+60B,"Moyzesova, OC",
+61A,"Rožňavská cesta, OC",49.0476035,20.29201
+61B,"Rožňavská cesta, OC",

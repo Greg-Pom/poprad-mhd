@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pop-Rád cestujem!</title>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <style>
+        @keyframes shimmer {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.9; }
+        }
+
+        body { 
+            margin: 0; 
+            display: flex; 
+            overflow: hidden; 
+        }
+
+        #map { 
+            height: 100vh; 
+            flex-grow: 1; 
+            position: relative; 
+        }
+
+        #search-container input {
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        #refresh-btn:hover {
+            background-color: #0078d7 !important;
+            transform: rotate(180deg); 
+        }
+
+        #refresh-btn:active {
+            transform: scale(0.95);
+        }
+
+        #results-list {
+            background: white;
+            border-radius: 0 0 12px 12px; 
+            overflow-y: auto;
+            max-height: 250px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border: 1px solid #eee;
+            margin-top: 5px;
+            position: absolute;
+            width: 100%;
+            z-index: 9999;
+        }
+
+        .search-item {
+            padding: 15px 20px !important; 
+            cursor: pointer !important;
+            font-family: 'Segoe UI', Roboto, sans-serif !important;
+            font-size: 15px !important;
+            border-bottom: 1px solid #eee !important;
+            transition: all 0.2s ease;
+            background-color: white;
+        }
+
+        .search-item:hover {
+            background-color: #f0f7ff !important; 
+            color: #0078ff !important;
+            padding-left: 25px !important; 
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        #side-panel {
+            width: 500px; 
+            height: 100vh; 
+            background: white; 
+            box-shadow: -2px 0 15px rgba(0,0,0,0.1); 
+            display: flex; 
+            flex-direction: column;
+            z-index: 2000;
+            position: relative; 
+        }
+
+        .marker {
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            border: 1px solid white; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+
+        .mapboxgl-popup-content {
+            border-radius: 12px !important;
+            padding: 14px 16px !important; 
+            min-width: 280px !important;
+            max-width: 380px !important;    
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
+            text-align: center !important; 
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .popup-stop-name {
+            font-size: 14px; 
+            font-weight: 800;
+            color: #004a7c; 
+            letter-spacing: -0.3px;
+            display: block;
+            margin-bottom: 6px;
+            paint-order: stroke fill;
+            -webkit-text-stroke: 3px white;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+        }
+
+        .popup-badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .logo-top-bar {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: 140px; 
+            background: #fff;
+            overflow: hidden;
+            border-bottom: 1px solid #eee;
+            top: 15px;
+        }
+
+        .stripe {
+            animation: shimmer 3s infinite ease-in-out;
+            flex: 1;
+            height: 100%;
+            display: flex;
+            top: 1px;
+            justify-content: center;
+            padding-top: -4px; 
+            color: #fff;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 37.5px;
+            text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+        }
+
+        .grey { flex: 0.4 !important; } 
+
+        .yellow { background-color: #FDC300; }
+        .red { background-color: #E30613; }
+        .blue-light { background-color: #00AEEF; }
+        .pink { background-color: #f196bb; }
+        .purple { background-color: #664E9A; }
+        .brown { background-color: #794E24; }
+        .green { background-color: #006837; }
+        .grey { background-color: #575756; }
+
+        .logo-overlay {
+            position: absolute;
+            bottom: 5px;
+            left: 24px;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .poprad-text {
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            font-weight: 900;
+            font-size: 48px;
+            color: #004a7c;
+            letter-spacing: -1px;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            paint-order: stroke fill;
+            -webkit-text-stroke: 6px white;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+        }
+
+        .red-text { color: #E30613; -webkit-text-stroke: 6px white;}
+
+        .cestujem-text {
+            position: absolute;
+            bottom: 2px;
+            right: 130px;
+            font-family: 'Brush Script MT', cursive;
+            font-size: 37px;
+            color: #E30613;
+            -webkit-text-stroke: 0.5px white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            transform: rotate(-5deg); 
+        }
+
+        @media (max-width: 600px) {
+            #side-panel {
+                width: 100%;
+                height: 40%; 
+            }
+            .poprad-text {
+                font-size: 32px; 
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map">
+        <div id="search-container" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 320px;">
+            <input type="text" id="stop-search" placeholder="Hľadať zastávku..." autocomplete="off"
+                style="width: 100%; padding: 12px 20px; border-radius: 25px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); outline: none; font-family: 'Segoe UI', sans-serif;">
+            <div id="results-list" style="background: white; border-radius: 12px; display: none; max-height: 250px; overflow-y: auto; margin-top: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);"></div>
+        </div>
+        <button onclick="resetMapToDefault()" id="refresh-btn" title="Resetovať mapu"
+            style="position: absolute; top: 20px; right: 20px; z-index: 1000; background: white; border: none; width: 44px; height: 44px; border-radius: 45%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.2s ease;">
+            🔄
+        </button>
+    </div>
+
+    <div id="side-panel">
+        <div class="logo-top-bar">
+            <div class="stripe yellow">3</div>
+            <div class="stripe red">6</div>
+            <div class="stripe blue-light">5</div>
+            <div class="stripe pink">C</div>
+            <div class="stripe purple">I</div>
+            <div class="stripe brown">T</div>
+            <div class="stripe green">Y</div>
+            <div class="stripe grey"></div>
+            
+            <div class="logo-overlay">
+                <div class="poprad-text">POP<span class="red-text">RAD</span></div>
+                <div class="cestujem-text">cestujem</div>
+            </div>
+        </div>
+
+        <div style="padding: 20px;">
+            <label style="font-size: 12px; font-weight: bold; color: #888;">ODKIAĽ</label>
+            <input type="text" placeholder="Zadajte zastávku..." style="width: 100%; padding: 10px; margin: 5px 0 20px 0; border: 1px solid #ddd; border-radius: 4px;">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #888;">KAM</label>
+            <input type="text" placeholder="Zadajte cieľ..." style="width: 100%; padding: 10px; margin: 5px 0 20px 0; border: 1px solid #ddd; border-radius: 4px;">
+
+            <button style="width: 100%; background: #0078ff; color: white; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                Hľadať spojenie
+            </button>
+        </div>
+    </div>
+
+    <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZ3JlZ3lwb20iLCJhIjoiY21wMnR1NmFlMGt1NjJzcXl0bTZocGZ0OSJ9.p7PoXfEGq-b0cuRLx804Sw';
+    
+    const popradBounds = [
+        [20.1500, 48.9800], 
+        [20.4500, 49.1500]  
+    ];
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [20.2928, 49.0592], 
+        zoom: 14,
+        minZoom: 13,         
+        maxZoom: 18,         
+        maxBounds: popradBounds 
+    });
+
+    var lineColors = {};
+    var allMarkers = [];
+    var timetableData = []; 
+    var currentLineSourceId = 'route-source';
+    var activeLineFilter = null; 
+
+    map.on('load', () => {
+        Papa.parse("lines.txt", {
+            download: true,
+            header: true,
+            complete: function(colorResults) {
+                colorResults.data.forEach(function(c) {
+                    if(c.line) lineColors[c.line.trim()] = c.line_colour;
+                });
+                
+                Papa.parse("timetables.csv", {
+                    download: true,
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(timetableResults) {
+                        timetableData = timetableResults.data;
+                        loadStops(); 
+                    }
+                });
+            }
+        });
+    });
+
+    function loadStops() {
+        Papa.parse("p1.csv", {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                allMarkers.forEach(m => m.remove());
+                allMarkers = [];
+
+                const groupLineAggregator = {};
+
+                results.data.forEach(function(row) {
+                    if (!row.stop_lat || !row.stop_lon) return;
+                    const gid = row.group_id ? row.group_id.trim() : null;
+                    const linesArray = row.lines ? row.lines.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+                    if (gid) {
+                        if (!groupLineAggregator[gid]) {
+                            groupLineAggregator[gid] = new Set();
+                        }
+                        linesArray.forEach(line => groupLineAggregator[gid].add(line));
+                    }
+                });
+
+                results.data.forEach(function(row) {
+                    if (!row.stop_lat || !row.stop_lon) return;
+
+                    const lat = parseFloat(row.stop_lat);
+                    const lon = parseFloat(row.stop_lon);
+                    if (isNaN(lat) || !isFinite(lat) || isNaN(lon) || !isFinite(lon)) return;
+
+                    const gid = row.group_id ? row.group_id.trim() : null;
+                    const stopId = row.stop_id ? row.stop_id.trim() : (gid || "");
+                    
+                    let stopName = row["stop-name"] ? row["stop-name"].trim() : "Zastávka";
+                    
+                    const pickupType = row.pickup_type ? row.pickup_type.trim() : "";
+                    const isArrivalOnly = (pickupType === "0");
+                    
+                    if (isArrivalOnly) {
+                        stopName += ' <span style="color: #E30613;">(Výstupná)</span>';
+                    }
+
+                    const rawDirection = row.direction ? row.direction.trim() : "";
+                    let directionHTML = "";
+                    
+                    if (rawDirection && rawDirection !== "-") {
+                        directionHTML = `<span style="display: block; font-size: 13px; color: #666; font-style: italic; font-weight: bold; margin-top: -3px; margin-bottom: 6px;">Smer: ${rawDirection}</span>`;
+                    }
+
+                    const localLines = row.lines ? row.lines.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    const isDuplicate = gid && allMarkers.some(m => m.groupId === gid);
+
+                    let displayLines = [...localLines];
+                    if (gid && !isDuplicate) {
+                        displayLines = Array.from(groupLineAggregator[gid]);
+                    }
+
+                    displayLines.sort((a, b) => parseInt(a) - parseInt(b) || String(a).localeCompare(String(b)));
+
+                    const generateBadgesHTML = (currentZoomLevel) => {
+                        const linesToDraw = (currentZoomLevel > 13.99) ? localLines : displayLines;
+
+                        return linesToDraw.map(lineNum => {
+                            var color = lineColors[lineNum] || "#666";
+                            return `<span onclick="filterByLine('${lineNum}')" style="display:inline-block; width:18px; height:18px; line-height:18px; border-radius:50%; background-color:${color}; color:white; text-align:center; font-weight:bold; font-size:9px; margin:1px; cursor:pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">${lineNum}</span>`;
+                        }).join('');
+                    };
+
+                    const popupContent = `
+                        <span class="popup-stop-name">${stopName}</span>
+                        ${directionHTML}
+                        <div class="popup-badge-container" style="margin-bottom: 8px;">${generateBadgesHTML(map.getZoom())}</div>
+                        <div class="popup-departures" id="deps-${stopId}" style="text-align: left; border-top: 1px solid #eef2f5; padding-top: 8px; font-size: 13px;">
+                            <span style="color: #888; font-style: italic; display: block; text-align: center;">Načítavam dáta...</span>
+                        </div>
+                    `;
+
+                    const el = document.createElement('div');
+                    el.className = 'marker';
+                    el.style.backgroundImage = 'url(busicon.png)';
+                    el.style.width = '24px';
+                    el.style.height = '24px';
+                    el.style.borderRadius = '50%';
+
+                    const popupInstance = new mapboxgl.Popup({ offset: 12 }).setHTML(popupContent);
+
+                    const marker = new mapboxgl.Marker({ element: el })
+                        .setLngLat([lon, lat])
+                        .setPopup(popupInstance);
+
+                    marker.groupId = gid;
+                    marker.stopId = stopId;
+                    marker.isSecondary = isDuplicate;
+                    marker.lineData = localLines;      
+                    marker.groupLines = displayLines;   
+                    marker.cleanStopName = stopName; 
+                    marker.directionMarkup = directionHTML; 
+                    marker.isArrivalOnly = isArrivalOnly; 
+                    
+                    marker.updatePopupBadges = function(zoomLevel) {
+                        const updatedContent = `
+                            <span class="popup-stop-name">${this.cleanStopName}</span>
+                            ${this.directionMarkup}
+                            <div class="popup-badge-container" style="margin-bottom: 8px;">${generateBadgesHTML(zoomLevel)}</div>
+                            <div class="popup-departures" id="deps-${this.stopId}" style="text-align: left; border-top: 1px solid #eef2f5; padding-top: 8px; font-size: 13px;">
+                                <span style="color: #888; font-style: italic; display: block; text-align: center;">Načítavam dáta...</span>
+                            </div>
+                        `;
+                        this.getPopup().setHTML(updatedContent);
+                    };
+
+                    popupInstance.on('open', () => {
+                        requestAnimationFrame(() => {
+                            renderLiveDepartures(marker);
+                        });
+                    });
+
+                    allMarkers.push(marker);
+                });
+
+                toggleGroups();
+            }
+        });
+    }
+
+    // Explicit local calculation tracking for holiday parameters
+    function isSchoolHoliday(dateObj) {
+        const holidayRanges = [
+            { start: "2026-01-01", end: "2026-01-07" }, 
+            { start: "2026-02-16", end: "2026-02-20" }, 
+            { start: "2026-04-02", end: "2026-04-07" }, 
+            { start: "2026-07-01", end: "2026-08-31" }, 
+            { start: "2026-10-29", end: "2026-10-30" }, 
+            { start: "2026-12-23", end: "2026-12-31" }  
+        ];
+
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+
+        return holidayRanges.some(range => formattedDate >= range.start && formattedDate <= range.end);
+    }
+
+    function getTodayServiceType() {
+        const now = new Date();
+        const day = now.getDay(); 
+        
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const date = String(now.getDate()).padStart(2, '0');
+        const matchMD = `${month}-${date}`;
+        
+        const slovakHolidays = [
+            "01-01", "01-06", "05-01", "05-08", "07-05", "08-29", 
+            "09-01", "09-15", "11-01", "11-17", "12-24", "12-25", "12-26"
+        ];
+
+        if (day === 0 || day === 6 || slovakHolidays.includes(matchMD)) {
+            return "3"; 
+        }
+        if (isSchoolHoliday(now)) {
+            return "2"; 
+        }
+        return "1"; 
+    }
+
+   function renderLiveDepartures(markerObj) {
+    const activeStopId = markerObj.stopId.trim().toLowerCase();
+    const depContainer = document.getElementById(`deps-${markerObj.stopId}`);
+    if (!depContainer) return;
+
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentHHMM = `${String(currentHour).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    // Determine if we should evaluate today's schedule or look ahead to tomorrow morning
+    let trackingDate = new Date(now);
+    let isLateNightBypass = false;
+
+    // If it's past 21:00 (9 PM), evaluate tomorrow's service calendar day type instead
+    if (currentHour >= 21) {
+        trackingDate.setDate(trackingDate.getDate() + 1);
+        isLateNightBypass = true;
+    }
+
+    // --- RECALCULATED SERVICE TYPE FOR TARGET TARGET DATE ---
+    const day = trackingDate.getDay(); 
+    const month = String(trackingDate.getMonth() + 1).padStart(2, '0');
+    const date = String(trackingDate.getDate()).padStart(2, '0');
+    const matchMD = `${month}-${date}`;
+    
+    const slovakHolidays = [
+        "01-01", "01-06", "05-01", "05-08", "07-05", "08-29", 
+        "09-01", "09-15", "11-01", "11-17", "12-24", "12-25", "12-26"
+    ];
+
+    let targetService = "1"; // Default Workday
+    if (day === 0 || day === 6 || slovakHolidays.includes(matchMD)) {
+        targetService = "3"; // Weekend / Holiday
+    } else if (isSchoolHoliday(trackingDate)) {
+        targetService = "2"; // School Holiday Workday
+    }
+
+    const serviceLabels = { 
+        "1": "Pracovné dni (Školské vyučovanie)", 
+        "2": "Pracovné dni (Školské prázdniny)", 
+        "3": "Víkendy a sviatky" 
+    };
+
+    const arrivalOnlyMode = markerObj.isArrivalOnly;
+
+    if (!timetableData || timetableData.length === 0) {
+        depContainer.innerHTML = `<span style="color:red; font-style:italic;">Chyba: data nenacitane!</span>`;
+        return;
+    }
+
+    // Dynamic columns lookup
+    const keys = Object.keys(timetableData[0]);
+    const findKey = (arr) => keys.find(k => arr.includes(k.trim().toLowerCase())) || null;
+
+    const stopIdKey = findKey(['stop_id', 'stopid', 'zastavka_id', 'stop']);
+    const serviceTypeKey = findKey(['service_type', 'servicetype', 'calendar', 'rezim']);
+    const lineKey = findKey(['line', 'linka', 'route']);
+    const destinationKey = findKey(['destination', 'smer', 'ciel']);
+    const arrivalKey = findKey(['arrival', 'prichod', 'time_arr']);
+    const departureKey = findKey(['departure', 'odchod', 'time_dep']);
+
+    let filteredBuses = timetableData.filter(row => {
+        const rowStopId = (row[stopIdKey] || "").trim().toLowerCase();
+        const rowService = (row[serviceTypeKey] || "").trim();
+
+        if (rowStopId !== activeStopId) return false;
+
+        let rawTime = arrivalOnlyMode 
+            ? (row[arrivalKey] || row[departureKey] || "") 
+            : (row[departureKey] || row[arrivalKey] || "");
+        
+        rawTime = rawTime.trim();
+        if (!rawTime || rawTime === "-") return false;
+
+        if (rawTime.length === 4 && rawTime.indexOf(':') === 1) {
+            rawTime = "0" + rawTime;
+        }
+
+        // Time filtering window logic
+        let isFutureBus = false;
+        if (isLateNightBypass) {
+            // Late at night: show everything for tomorrow morning (all day view from 00:00 onwards)
+            isFutureBus = true; 
+        } else {
+            // Normal daytime hours: only show departures happening later today
+            isFutureBus = rawTime >= currentHHMM;
+        }
+        
+        // Calendar match rule checking against target targetService date
+        let matchesCalendar = false;
+        if (rowService === "5") {
+            matchesCalendar = true;
+        } else if (rowService === "4") {
+            matchesCalendar = (targetService === "1" || targetService === "2");
+        } else {
+            matchesCalendar = (rowService === targetService);
+        }
+
+        return isFutureBus && matchesCalendar;
+    });
+
+    // Sort ascending
+    filteredBuses.sort((a, b) => {
+        let timeA = (arrivalOnlyMode ? (a[arrivalKey] || a[departureKey]) : (a[departureKey] || a[arrivalKey]) || "").trim();
+        let timeB = (arrivalOnlyMode ? (b[arrivalKey] || b[departureKey]) : (b[departureKey] || b[arrivalKey]) || "").trim();
+        if (timeA.length === 4 && timeA.indexOf(':') === 1) timeA = "0" + timeA;
+        if (timeB.length === 4 && timeB.indexOf(':') === 1) timeB = "0" + timeB;
+        return timeA.localeCompare(timeB);
+    });
+
+    filteredBuses = filteredBuses.slice(0, 3);
+
+    // Render HTML Output
+    if (filteredBuses.length === 0) {
+        depContainer.innerHTML = `
+            <div style="font-size: 11px; color: #a0aab2; text-align: center; margin-bottom: 4px; font-weight: bold;">
+                Režim pre ${isLateNightBypass ? "Zajtra" : "Dnes"}: ${serviceLabels[targetService]}
+            </div>
+            <span style="color: #777; font-style: italic; display: block; text-align: center; font-size:12px;">Žiadne ďalšie spoje</span>
+        `;
+    } else {
+        const headerLabel = arrivalOnlyMode ? "Príchody" : "Odchody";
+        const dayLabel = isLateNightBypass ? "Zajtra" : "Dnes";
+        
+        let htmlContent = `
+            <div style="font-size: 12px; color: #004a7c; text-align: center; margin-bottom: 6px; font-weight: bold; border-bottom: 1px dashed #eef2f5; padding-bottom: 3px;">
+                ${headerLabel} - ${dayLabel} (${serviceLabels[targetService]})
+            </div>`;
+        
+        htmlContent += filteredBuses.map(bus => {
+            const cleanLine = bus[lineKey] ? bus[lineKey].trim() : "?";
+            const cleanDestination = bus[destinationKey] ? bus[destinationKey].trim() : "Neznámy smer";
+            const cleanTime = (arrivalOnlyMode ? (bus[arrivalKey] || bus[departureKey]) : (bus[departureKey] || bus[arrivalKey]) || "").trim();
+            const badgeColor = lineColors[cleanLine] || "#575756";
+
+            // We add an onclick action to the entire row wrapper, along with styles for a pointer hand cursor
+            return `
+                <div onclick="filterByLine('${cleanLine}')" 
+                     class="departure-row"
+                     style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; cursor: pointer; padding: 4px; border-radius: 4px; transition: background 0.2s ease;"
+                     onmouseover="this.style.backgroundColor='#f0f4f8'" 
+                     onmouseout="this.style.backgroundColor='transparent'"
+                     title="Zobraziť trasu linky ${cleanLine}">
+                    
+                    <div style="display: flex; align-items: center; gap: 6px; flex-grow: 1;">
+                        <span style="display:inline-block; width:18px; height:18px; line-height:18px; border-radius:50%; background-color:${badgeColor}; color:white; text-align:center; font-weight:bold; font-size:10px; flex-shrink: 0;">${cleanLine}</span>
+                        <span style="color: #333; font-weight: 600; font-size: 12px; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 3px;">
+                            ${cleanDestination}
+                        </span>
+                    </div>
+                    <span style="font-weight: 800; color: #004a7c; font-size: 12px; flex-shrink: 0; margin-left: 8px;">${cleanTime}</span>
+                </div>
+            `;
+        }).join('');
+        
+        depContainer.innerHTML = htmlContent;
+    }
+}
+
+    function toggleGroups() {
+        const currentZoom = map.getZoom();
+
+        allMarkers.forEach(function(marker) {
+            let matchesFilter = true;
+            
+            if (activeLineFilter) {
+                if (currentZoom <= 13.99) {
+                    matchesFilter = marker.groupLines.includes(activeLineFilter);
+                } else {
+                    matchesFilter = marker.lineData.includes(activeLineFilter);
+                }
+            }
+
+            if (!matchesFilter) {
+                marker.remove();
+                return;
+            }
+
+            if (currentZoom <= 13.99) {
+                if (marker.isSecondary) {
+                    marker.remove(); 
+                } else {
+                    marker.addTo(map); 
+                    marker.getElement().style.width = '24px';
+                    marker.getElement().style.height = '24px';
+                }
+            } else {
+                marker.addTo(map);
+                marker.getElement().style.width = '26px';
+                marker.getElement().style.height = '26px';
+            }
+        });
+    }
+
+    map.on('zoomend', toggleGroups);
+
+    function resetMapToDefault() {
+        activeLineFilter = null; 
+        const layersToRemove = ['route-glow', 'route-standard', 'route-sometimes', 'route-oneway', 'route-arrows', 'route-line', 'route-special'];
+        layersToRemove.forEach(id => {
+            if (map.getLayer(id)) map.removeLayer(id);
+        });
+
+        if (map.getSource(currentLineSourceId)) {
+            map.removeSource(currentLineSourceId);
+        }
+        toggleGroups();
+    }
+
+    function filterByLine(lineNum) {
+        activeLineFilter = lineNum;
+        const color = lineColors[lineNum] || "#0078FF";
+
+        ['route-glow', 'route-standard', 'route-sometimes', 'route-oneway', 'route-arrows'].forEach(id => {
+            if (map.getLayer(id)) map.removeLayer(id);
+        });
+        if (map.getSource(currentLineSourceId)) map.removeSource(currentLineSourceId);
+
+        fetch(`route-${lineNum}.json`)
+            .then(response => response.json())
+            .then(geojsonData => {
+                map.addSource(currentLineSourceId, { type: 'geojson', data: geojsonData });
+
+                map.addLayer({
+                    'id': 'route-glow',
+                    'type': 'line',
+                    'layout': { 'line-join': 'round', 'line-cap': 'round' },
+                    'source': currentLineSourceId,
+                    'paint': {
+                        'line-color': color,
+                        'line-width': 10,
+                        'line-blur': 8,
+                        'line-opacity': 0.3
+                    }
+                });
+
+                map.addLayer({
+                    'id': 'route-standard',
+                    'type': 'line',
+                    'source': currentLineSourceId,
+                    'filter': ['==', ['get', 'type'], 'standard'], 
+                    'layout': { 'line-join': 'round', 'line-cap': 'round' },
+                    'paint': {
+                        'line-color': color,
+                        'line-width': 4
+                    }
+                });
+
+                map.addLayer({
+                    'id': 'route-sometimes',
+                    'type': 'line',
+                    'source': currentLineSourceId,
+                    'filter':  ['==', ['get', 'type'], 'sometimes'], 
+                    'layout': { 'line-join': 'round', 'line-cap': 'round' },
+                    'paint': {
+                        'line-color': color,
+                        'line-width': 4,
+                        'line-dasharray': [2, 2] 
+                    }
+                });
+
+                map.addLayer({
+                    'id': 'route-oneway',
+                    'type': 'line',
+                    'source': currentLineSourceId,
+                    'filter': ['==', ['get', 'type'], 'oneway'],
+                    'layout': { 'line-join': 'round', 'line-cap': 'round' },
+                    'paint': {
+                        'line-color': color,
+                        'line-width': 4
+                    }
+                });
+
+                map.addLayer({
+                    'id': 'route-arrows',
+                    'type': 'symbol',
+                    'source': currentLineSourceId,
+                    'filter': ['==', ['get', 'type'], 'oneway'],
+                    'layout': {
+                        'symbol-placement': 'line',
+                        'symbol-spacing': 50,
+                        'text-field': '▶',
+                        'text-size': 12,
+                        'text-rotation-alignment': 'map',
+                        'text-keep-upright': false,
+                        'text-allow-overlap': true
+                    },
+                    'paint': {
+                        'text-color': '#FFFFFF',
+                        'text-halo-color': color,
+                        'text-halo-width': 1
+                    }
+                });
+            });
+
+        toggleGroups();
+    }
+
+    const searchInput = document.getElementById('stop-search');
+    const resultsList = document.getElementById('results-list');
+
+    function stripAccents(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        const rawQuery = e.target.value.toLowerCase().trim();
+        const cleanQuery = stripAccents(rawQuery);
+        
+        resultsList.innerHTML = ''; 
+
+        if (!cleanQuery) {
+            resultsList.style.display = 'none';
+            return;
+        }
+
+        const uniqueSeenNames = new Set();
+        const matches = [];
+
+        allMarkers.forEach(marker => {
+            const stopName = marker.cleanStopName || "Zastávka";
+            const plainTextName = stopName.replace(/<[^>]*>/g, "");
+            const cleanStopNameNormalized = stripAccents(plainTextName.toLowerCase());
+            const isMatch = cleanStopNameNormalized.includes(cleanQuery);
+            
+            if (isMatch && !uniqueSeenNames.has(plainTextName)) {
+                uniqueSeenNames.add(plainTextName);
+                matches.push(marker);
+            }
+        });
+
+        if (matches.length === 0) {
+            resultsList.innerHTML = `<div style="padding: 12px 20px; color: #888; font-family: sans-serif; font-size: 14px; background: white;">Zastávka sa nenašla</div>`;
+            resultsList.style.display = 'block';
+            return;
+        }
+
+        matches.forEach(marker => {
+            const item = document.createElement('div');
+            item.className = 'search-item'; 
+            const displayName = (marker.cleanStopName || "Zastávka").replace(/<[^>]*>/g, "");
+            item.textContent = displayName;
+            
+            item.addEventListener('click', () => {
+                const lngLat = marker.getLngLat();
+                
+                const showPopup = () => {
+                    if (map.getZoom() <= 13.99 && marker.isSecondary) {
+                        const primaryGroupMarker = allMarkers.find(m => m.groupId === marker.groupId && !m.isSecondary);
+                        if (primaryGroupMarker) primaryGroupMarker.togglePopup();
+                    } else {
+                        marker.togglePopup();
+                    }
+                };
+
+                const isAlreadyZoomed = map.getZoom() >= 16.5;
+                const currentCenter = map.getCenter();
+                const isAlreadyCentered = Math.abs(currentCenter.lng - lngLat[0]) < 0.001 && Math.abs(currentCenter.lat - lngLat[1]) < 0.001;
+
+                if (isAlreadyZoomed && isAlreadyCentered) {
+                    showPopup();
+                } else {
+                    map.flyTo({
+                        center: lngLat,
+                        zoom: 16.5,     
+                        essential: true, 
+                        speed: 1.4,      
+                        curve: 1.2       
+                    });
+                    map.once('moveend', showPopup);
+                }
+
+                searchInput.value = displayName;
+                resultsList.style.display = 'none';
+            });
+
+            resultsList.appendChild(item);
+        });
+
+        resultsList.style.display = 'block';
+    });
+</script>
+</body>
+</html>
